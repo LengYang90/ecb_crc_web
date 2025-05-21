@@ -58,10 +58,10 @@ class MLGeniePredictor:
             test_df["SampleID"] = test_df["SampleID"].astype(str)
         return test_df
 
-    def check_samples(self, test_df:pd.DataFrame):
+    def check_samples(self, test_df: pd.DataFrame):
         """
-        Check incomplete and invalid data
-        :param test_df: Input DataFrame, index is sample_id
+        check incomplete and invalid data
+        :param test_df: Input DataFrame
         :return: valid_df, invalid_list, incomplete_list
         """
         test_df = test_df[self.required_cols]
@@ -69,7 +69,7 @@ class MLGeniePredictor:
         test_df.index.name = "sample_id"
 
         gene_cols = ["GAPDH", "RB012", "RB018", "RB020", "RB054", "RB080", "RB102", "RB117", "RB167"]
-        # 1. First, check incomplete data
+        # 1. Check incomplete data
         incomplete_mask = []
         for idx, row in test_df.iterrows():
             incomplete = False
@@ -81,23 +81,21 @@ class MLGeniePredictor:
                     incomplete = True
                     break
                 try:
-                    float(val)
+                    fval = float(val)
+                    if fval > 40:
+                        incomplete = True
+                        break
                 except Exception:
                     incomplete = True
                     break
             incomplete_mask.append(incomplete)
         incomplete_df = test_df[incomplete_mask]
-        # 2. Check invalid data in the remaining samples
+        # 2. Check invalid data in the remaining samples (GAPDH >= 30)
         complete_df = test_df[[not x for x in incomplete_mask]]
-        # GAPDH >= 30 or any column in gene_cols > 40
         gapdh_numeric = pd.to_numeric(complete_df["GAPDH"], errors="coerce")
-        # Check if any column in gene_cols > 40
-        gene_numeric = complete_df[gene_cols].apply(pd.to_numeric, errors="coerce")
-        over_40_mask = (gene_numeric > 40).any(axis=1)
-        invalid_mask = (gapdh_numeric >= 30) | over_40_mask
+        invalid_mask = (gapdh_numeric >= 30)
         invalid_df = complete_df[invalid_mask]
         valid_df = complete_df[~invalid_mask]
-        #valid_df["sample_id"] = valid_df.index
         # Only keep sample ID (index) and convert to list
         incomplete_list = list(incomplete_df.index)
         invalid_list = list(invalid_df.index)
