@@ -110,10 +110,10 @@
                 Excel Upload and Processing
               </h2>
             </div>
-            <p class="text-gray-600 mb-4">
+            <!-- <p class="text-gray-600 mb-4">
               Upload an Excel file, and the system will automatically process
               and display the results.
-            </p>
+            </p> -->
             <!-- Add template download link with target="_blank" -->
             <p class="text-gray-600 mb-4">
               <a
@@ -187,6 +187,15 @@
             </div>
           </div>
 
+          <div class="space-y-3 text-gray-600 mb-4">
+            <p class="text-sm">
+              <span class="font-bold text-[#C41E3A]">INCOMPLETE DATA:</span> Gene data is missing or exceeds the allowable range (0–40). In this case, please check whether the data input is correct.
+            </p>
+            <p class="text-sm">
+              <span class="font-bold text-[#C41E3A]">INVALID DATA:</span> The internal reference gene GAPDH exceeds the threshold, indicating that RNA extraction for this sample or the detection result is invalid. Repeating the experiment or re-sampling is required.
+            </p>
+          </div>
+          
           <div id="loadingIndicator" class="hidden flex justify-center py-12">
             <div
               class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
@@ -614,7 +623,22 @@
         }
       }
 
-      // Display table
+      // columns to display in the table
+      const specifiedColumns = [
+        "SampleID",
+        "GAPDH",
+        "RB012",
+        "RB018",
+        "RB020",
+        "RB054",
+        "RB080",
+        "RB102",
+        "RB117",
+        "RB167",
+        "Predict Score",
+        "Result"
+      ];
+
       // Display table
       function displayTable(data) {
         if (!data || !data.length) {
@@ -626,55 +650,54 @@
         resultContainer.classList.remove("hidden");
 
         // Generate table headers
-        const headers = Object.keys(data[0]);
         tableHeader.innerHTML = "";
 
-        headers.forEach((header) => {
-          const th = document.createElement("th");
-          th.setAttribute("scope", "col");
-          th.className =
-            "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
-          th.textContent = header;
-          tableHeader.appendChild(th);
+        specifiedColumns.forEach((header) => {
+            const th = document.createElement("th");
+            th.setAttribute("scope", "col");
+            th.className =
+                "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+            th.textContent = header;
+            tableHeader.appendChild(th);
         });
 
         // Generate table content
         tableBody.innerHTML = "";
-                
+
         data.forEach((row) => {
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-gray-50 transition-colors duration-150";
+            const tr = document.createElement("tr");
+            tr.className = "hover:bg-gray-50 transition-colors duration-150";
 
-          headers.forEach((header) => {
-            const td = document.createElement("td");
-            td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-500";
+            specifiedColumns.forEach((header) => {
+                const td = document.createElement("td");
+                td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-500";
 
-            const value = row[header];
-            if (typeof value === 'number' && header !== 'SampleID') {
-              // Format number to two decimal places
-              td.textContent = value.toFixed(2);
-            } else if (value === "Undetermined") {
-              // Replace Undetermined with abbreviated form
-              td.textContent = "Undet"; 
-            } else if (header === "Result") {
-              const result = row[header];
-              let textColor = "text-gray-800";
+                const value = row[header];
+                if (typeof value === 'number' && header !== 'SampleID') {
+                    // Format number to two decimal places
+                    td.textContent = value.toFixed(2);
+                } else if (value === "Undetermined") {
+                    // Replace Undetermined with abbreviated form
+                    td.textContent = "Undet"; 
+                } else if (header === "Result") {
+                    const result = row[header];
+                    let textColor = "text-gray-800";
 
-              if (result === "High risk") {
-                textColor = "text-red-600 font-bold";
-              }
+                    if (result === "High risk") {
+                        textColor = "text-red-600 font-bold";
+                    }
 
-              td.innerHTML = `<span class="${textColor}">${
-                result || "N/A"
-              }</span>`;
-            } else {
-              td.textContent = value || "";
-            }
+                    td.innerHTML = `<span class="${textColor}">${
+                        result || "N/A"
+                    }</span>`;
+                } else {
+                    td.textContent = value || "";
+                }
 
-            tr.appendChild(td);
-          });
+                tr.appendChild(td);
+            });
 
-          tableBody.appendChild(tr);
+            tableBody.appendChild(tr);
         });
       } 
 
