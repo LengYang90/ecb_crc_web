@@ -31,7 +31,21 @@ class MLGeniePredictor:
             missing_cols_str = ", ".join(missing_cols)
             raise ValueError(f"The input data is missing the following columns: {missing_cols_str}")
 
+    def _check_duplicate_sample_ids(self, test_df:pd.DataFrame):
+        """
+        Check whether the sample ids are duplicated
+        :param test_df: Input DataFrame
+        :return: None
+        """
+        # Check for duplicate sample IDs
+        duplicate_ids = test_df["SampleID"].duplicated()
+        if duplicate_ids.any():
+            duplicated_sample_ids = test_df.loc[duplicate_ids, "SampleID"].tolist()
+            duplicated_str = ", ".join(map(str, duplicated_sample_ids))
+            raise ValueError(f"Duplicate sample IDs found: {duplicated_str}")
+       
 
+        
     def load_test_data(self):
         """
         Load test data
@@ -153,6 +167,7 @@ class MLGeniePredictor:
     def run(self):
         test_df = self.load_test_data()
         self._validate_data(test_df)
+        self._check_duplicate_sample_ids(test_df)
         valid_df, invalid_list, incomplete_list = self.check_samples(test_df)
         if len(invalid_list) > 0:
             invalid_list_str = ", ".join(invalid_list)
