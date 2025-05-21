@@ -71,100 +71,33 @@ curl -X POST "http://10.10.10.111:8211/crc/predict" \
 ]}'
 ```
 
-3. Use the execute API:
-```shell
-# Only for local environment
-curl --location --request POST 'http://127.0.0.1:2025/bagenie/executelocal' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "goal": "The rows of the matrix are the genes and the columns are the samples. For host gene expression data for each disease cohort. We filtered out lowly expressed genes to retain genes that are expressed in at least half of the samples in each disease cohort.  We performed variance stabilizing transformation using the R package '\''DESeq2'\'' on the filtered gene expression read count data.  We filtered out genes with low variance, using 25% quantile of variance across samples in each disease cohort as cut-off.  Performing these steps for RNA-seq data for each disease cohort separately resulted in a unique host gene expression matrix per disease for downstream analysis.",
-    "outdir": "/mnt/data/lengyang/youjia_project/autoba/res",
-    "chatbot_model": "gpt-4o",
-    "chatbot_key": "",
-    "docker_env" : "lengyang/pb_bio_tools:1.0.1",
-    "max_try_num" : 5,
-    "user_expertise_level": "intermediate"
-}'
++ Output
 ```
-
-### Usage Docker
-
-1. Plan
-```Shell
-# docker build
-docker build -t bagenie_plan:1.1.0 .
-
-# docker run
-docker run \
--e "AWS_ACCESS_KEY=XXX" \
--e "AWS_SECRET_KEY=XXX" \
--e "AWS_REGION=XXX"  \
--p 2025:2025 bagenie_plan:1.1.0
-```
-
-
-2. Execute
-```Shell
-# docker build
-docker build -t bagenie_exe:1.1.0 -f scripts/execute_docker/Dockerfile .
-
-# docker run
-docker run bagenie_exe:1.1.0
-```
-
-
-### Usage Commnad Line
-
-1. Use the plan command:
-```python
-from scripts.bagenie_plan import BAGeniePlan
-
-
-bagenie_plan = BAGeniePlan(
-    input_config = input_json_data,
-    goal = goal,
-    outdir = outdir,
-    chatbot_model = chatbot_model,
-    chatbot_key = chatbot_key,
-    user_expertise_level = "intermediate"
-    )
-bagenie_plan.bagenie_plan()
-```
-
-2. Use the execute command:
-```python
-from scripts.bagenie_execute import BAGenieExecute
-
-bagenie_execute = BAGenieExecute(
-    goal = goal,
-    outdir = outdir,
-    chatbot_model = chatbot_model,
-    chatbot_key = chatbot_key,
-    docker_env = "lengyang/pb_bio_tools:1.0.1",
-    max_try_num = 5,
-    user_expertise_level = "intermediate"
-    )
-bagenie_execute.bagenie_execute()
-```
-
-### Output
-
-1. Plan
-```Shell
-└── outdir
-    ├── execute_plan.json # [ input file description data, response for plan, parameters for plan ]
-    └── prompt.txt # prompt for plan
-```
-
-2. Execute
-```Shell
-└── outdir
-    ├── execute_plan.json
-    ├── execute_log.json # execute log data
-    ├── Step_1_Output # execute work dir
-    │   ├── command_0.sh
-    │   ├── command_success.sh
-    │   └── ...
-    ├── Step_2_Output
-    ├── ...
+[
+    {
+        "SampleID": "test_sample_1",
+        "Predict Score": 0.7824867725,
+        "Result": "High risk"
+    },
+    {
+        "SampleID": "test_sample_5",
+        "Predict Score": 0.8452777778,
+        "Result": "High risk"
+    },
+    {
+        "SampleID": "test_sample_3",
+        "Predict Score": "",
+        "Result": "INVALID DATA"
+    },
+    {
+        "SampleID": "test_sample_2",
+        "Predict Score": "",
+        "Result": "INCOMPLETE DATA"
+    },
+    {
+        "SampleID": "test_sample_4",
+        "Predict Score": "",
+        "Result": "INCOMPLETE DATA"
+    }
+]
 ```

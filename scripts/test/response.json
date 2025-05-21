@@ -1,0 +1,27 @@
+[
+    {
+        "SampleID": "test_sample_1",
+        "Predict Score": 0.7824867725,
+        "Result": "High risk"
+    },
+    {
+        "SampleID": "test_sample_5",
+        "Predict Score": 0.8452777778,
+        "Result": "High risk"
+    },
+    {
+        "SampleID": "test_sample_3",
+        "Predict Score": "",
+        "Result": "INVALID DATA"
+    },
+    {
+        "SampleID": "test_sample_2",
+        "Predict Score": "",
+        "Result": "INCOMPLETE DATA"
+    },
+    {
+        "SampleID": "test_sample_4",
+        "Predict Score": "",
+        "Result": "INCOMPLETE DATA"
+    }
+]
