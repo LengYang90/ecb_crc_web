@@ -1,0 +1,1 @@
+[{"SAMPLE":"test_sample_1","PREDICT SCORE":0.7824867725,"RESULT":"High risk"},{"SAMPLE":"test_sample_5","PREDICT SCORE":0.8452777778,"RESULT":"High risk"},{"SAMPLE":"test_sample_3","PREDICT SCORE":"","RESULT":"INVALID DATA"},{"SAMPLE":"test_sample_2","PREDICT SCORE":"","RESULT":"INCOMPLETE DATA"},{"SAMPLE":"test_sample_4","PREDICT SCORE":"","RESULT":"INCOMPLETE DATA"}]
