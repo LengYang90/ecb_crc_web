@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>xCRC Data Analysis Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Add SheetJS library for Excel processing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Tailwind configuration -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#722ED1",
+              secondary: "#36CFC9",
+              accent: "#722ED1",
+              neutral: "#F5F7FA",
+              "neutral-dark": "#4E5969",
+            },
+            fontFamily: {
+              inter: ["Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Custom utility classes -->
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .content-auto {
+          content-visibility: auto;
+        }
+        .card-shadow {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05),
+            0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .btn-hover {
+          @apply transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5;
+        }
+        .fade-in {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+        .slide-up {
+          animation: slideUp 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes slideUp {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-50 font-inter min-h-screen flex flex-col">
+    <!-- Top navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+      <div
+        class="container mx-auto px-4 py-4 flex justify-between items-center"
+      >
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-database text-primary text-2xl"></i>
+          <h1 class="text-xl font-bold text-gray-800">
+            xCRC Data Analysis Tool
+          </h1>
+        </div>
+        <nav>
+          <img src="https://elcapitanbio.com/logo.png" alt="Logo" class="h-8" />
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main content area -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+      <div class="max-w-7xl mx-auto">
+        <!-- Function cards -->
+        <div class="grid grid-cols-1 gap-6 mb-10">
+          <!-- Excel upload function -->
+          <div
+            class="bg-white rounded-xl p-6 card-shadow hover:shadow-md transition-shadow duration-300 slide-up"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mr-3"
+              >
+                <i class="fa-solid fa-file-excel text-primary"></i>
+              </div>
+              <h2 class="text-lg font-semibold text-gray-800">
+                Excel Upload and Processing
+              </h2>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Upload an Excel file, and the system will automatically process
+              and display the results.
+            </p>
+            <!-- Add template download link with target="_blank" -->
+            <p class="text-gray-600 mb-4">
+              <a
+                href="https://drive.google.com/uc?export=download&id=1NnIkDp_CIu3s-x8UCqd1vgRIVagGFdZf"
+                target="_self"
+                class="text-primary hover:underline"
+                >Template Download</a
+              >
+            </p>
+
+            <div
+              id="dropZone"
+              class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors duration-200 cursor-pointer"
+            >
+              <input
+                type="file"
+                id="excelFile"
+                accept=".xlsx, .xls, .csv"
+                class="hidden"
+              />
+              <label for="excelFile" class="cursor-pointer">
+                <i
+                  class="fa-solid fa-cloud-upload text-3xl text-gray-400 mb-2"
+                ></i>
+                <p class="text-gray-600">Click or drag files here to upload</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  Supports .xlsx, .xls, .csv formats
+                </p>
+              </label>
+              <div id="fileInfo" class="hidden mt-3 p-2 bg-gray-100 rounded">
+                <p id="fileName" class="text-sm font-medium text-gray-800"></p>
+                <p id="fileSize" class="text-xs text-gray-500"></p>
+                <div class="mt-2 flex justify-between items-center">
+                  <div class="text-xs text-gray-500">
+                    <span id="rowsCount">0</span> rows of data
+                  </div>
+                  <button
+                    id="reselectBtn"
+                    class="text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Reselect
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result display area -->
+        <div class="bg-white rounded-xl p-6 card-shadow mb-10 fade-in">
+          <div
+            class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3"
+          >
+            <h2 class="text-lg font-semibold text-gray-800">Result Display</h2>
+            <div class="flex space-x-2">
+              <button
+                id="fetchApiBtn"
+                class="bg-primary text-white py-2 px-4 rounded-lg flex items-center justify-center btn-hover whitespace-nowrap"
+              >
+                <i class="fa-solid fa-refresh mr-2"></i>
+                Get Prediction Scores
+              </button>
+              <button
+                id="downloadExcelBtn"
+                class="bg-primary text-white py-2 px-4 rounded-lg flex items-center justify-center btn-hover whitespace-nowrap opacity-50 cursor-not-allowed"
+                disabled
+              >
+                <i class="fa-solid fa-download mr-2"></i>
+                Download Excel
+              </button>
+            </div>
+          </div>
+
+          <div id="loadingIndicator" class="hidden flex justify-center py-12">
+            <div
+              class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
+            ></div>
+          </div>
+
+          <div id="resultContainer" class="hidden">
+            <div class="flex items-center justify-between mb-3">
+              <!-- <div class="text-sm font-medium text-gray-500">Excel Data</div> -->
+              <!-- <div class="flex items-center text-xs text-gray-400">
+                <i class="fa-solid fa-clock-o mr-1"></i>
+                <span id="responseTime">0ms</span>
+              </div> -->
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr id="tableHeader">
+                    <!-- Table headers will be dynamically generated by JavaScript -->
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
+                  <!-- Table content will be dynamically generated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div
+            id="errorContainer"
+            class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mt-4"
+          >
+            <div class="flex items-start">
+              <div class="flex-shrink-0 pt-0.5">
+                <i class="fa-solid fa-exclamation-circle text-red-500"></i>
+              </div>
+              <div class="ml-3 flex-grow">
+                <h3 class="text-sm font-medium text-red-800">
+                  Processing Error
+                </h3>
+                <div class="mt-1 text-sm text-red-700">
+                  <p id="errorMessage">
+                    Request processing failed. Please check your input and
+                    network connection.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="emptyState" class="py-12 text-center">
+            <!-- <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+            <i class="fa-solid fa-file-text-o text-gray-400 text-xl"></i>
+          </div> -->
+            <h3 class="text-gray-500 font-medium">No Results Yet</h3>
+            <p class="text-gray-400 text-sm mt-1">
+              Upload an Excel file to view results
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Notification component -->
+    <div
+      id="notification"
+      class="fixed top-4 right-4 max-w-sm w-full bg-white rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+      style="transform: translateX(calc(100% + 2rem))"
+    >
+      <div class="flex">
+        <div id="notificationIcon" class="flex-shrink-0 mt-0.5">
+          <i class="fa-solid fa-check-circle text-green-500"></i>
+        </div>
+        <div class="ml-3">
+          <p id="notificationMessage" class="text-sm font-medium text-gray-800">
+            Operation Successful
+          </p>
+          <p id="notificationDetail" class="text-xs text-gray-500 mt-1">
+            Data has been copied to the clipboard
+          </p>
+        </div>
+        <div class="ml-auto pl-3">
+          <div class="flex-shrink-0">
+            <button
+              id="closeNotification"
+              class="text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // DOM elements
+      const excelFile = document.getElementById("excelFile");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const fileSize = document.getElementById("fileSize");
+      const rowsCount = document.getElementById("rowsCount");
+      const dropZone = document.getElementById("dropZone");
+      const resultContainer = document.getElementById("resultContainer");
+      const tableHeader = document.getElementById("tableHeader");
+      const tableBody = document.getElementById("tableBody");
+      // const responseTime = document.getElementById("responseTime");
+      const errorContainer = document.getElementById("errorContainer");
+      const errorMessage = document.getElementById("errorMessage");
+      const emptyState = document.getElementById("emptyState");
+      const loadingIndicator = document.getElementById("loadingIndicator");
+      const fetchApiBtn = document.getElementById("fetchApiBtn");
+      const reselectBtn = document.getElementById("reselectBtn");
+      const notification = document.getElementById("notification");
+      const notificationIcon = document.getElementById("notificationIcon");
+      const notificationMessage = document.getElementById(
+        "notificationMessage"
+      );
+      const notificationDetail = document.getElementById("notificationDetail");
+      const closeNotification = document.getElementById("closeNotification");
+      const downloadExcelBtn = document.getElementById("downloadExcelBtn");
+      const resultInfo = document.getElementById("resultInfo");
+      // Backend API endpoint (needs to be replaced with the actual backend address)
+      const PREDICTION_API_ENDPOINT = "http://10.10.10.111:8211/crc/predict";
+
+      // Store the parsed Excel data
+      let excelData = null;
+      let currentTableData = null;
+      // Flag to indicate whether real API should be used
+      const USE_REAL_API = true; // Set to true to use real API
+
+      // Drag-and-drop upload related events
+      dropZone.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        this.classList.add("border-primary");
+        this.classList.add("bg-primary/5");
+      });
+
+      dropZone.addEventListener("dragleave", function () {
+        this.classList.remove("border-primary");
+        this.classList.remove("bg-primary/5");
+      });
+
+      dropZone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        this.classList.remove("border-primary");
+        this.classList.remove("bg-primary/5");
+
+        if (e.dataTransfer.files.length) {
+          handleFileSelection(e.dataTransfer.files[0]);
+        }
+      });
+
+      // File selection event
+      excelFile.addEventListener("change", function () {
+        if (this.files && this.files[0]) {
+          handleFileSelection(this.files[0]);
+        }
+      });
+
+      // Reselect file
+      reselectBtn.addEventListener("click", function () {
+        excelFile.click();
+      });
+
+      // Handle file selection
+      function handleFileSelection(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove("hidden");
+
+        // Automatically process the Excel file
+        processExcelFile(file);
+      }
+
+      // API data fetching
+      fetchApiBtn.addEventListener("click", function () {
+        if (!excelData || !excelData.length) {
+          showError("Please upload and process an Excel file first");
+          return;
+        }
+
+        fetchPredictionScores(excelData);
+      });
+
+      // Download Excel file
+      downloadExcelBtn.addEventListener("click", function () {
+        if (currentTableData && currentTableData.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(currentTableData);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+          XLSX.writeFile(wb, "prediction_results.xlsx");
+          showNotification(
+            "Success",
+            "Excel file has been downloaded",
+            "success"
+          );
+        } else {
+          showError("No data to download");
+        }
+      });
+
+      // Close notification
+      closeNotification.addEventListener("click", function () {
+        notification.style.transform = "translateX(calc(100% + 2rem))";
+      });
+
+      // Process Excel file
+      function processExcelFile(file) {
+        showLoading(true);
+
+        try {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+
+              // Get the first worksheet
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+
+              // Convert the worksheet to JSON
+              excelData = XLSX.utils.sheet_to_json(worksheet);
+              
+              // check empty SampleID
+              const hasEmptySampleID = excelData.some(row => !row.SampleID || row.SampleID.toString().trim() === '');
+              if (hasEmptySampleID) {
+                showLoading(false);
+                showError("Excel data contains empty SampleID values. Please check your data.");
+                return;
+              }
+
+              // Update row count statistics
+              rowsCount.textContent = excelData.length;
+
+              // Display the table (add Predict Score and Result columns)
+              const dataWithScore = excelData.map((row) => ({
+                ...row,
+                "Predict Score": "N/A",
+                Result: "N/A",
+              }));
+
+              currentTableData = dataWithScore;
+              displayTable(dataWithScore);
+
+              // Enable prediction button but keep download button disabled
+              updateButtonStates(false);
+
+              showLoading(false);
+
+              // Trigger data loading event
+              const event = new Event("dataLoaded");
+              document.dispatchEvent(event);
+            } catch (error) {
+              showLoading(false);
+              showError(`Excel parsing failed: ${error.message}`);
+              console.error("Excel parsing error:", error);
+            }
+          };
+
+          reader.onerror = function () {
+            showLoading(false);
+            showError("File reading failed");
+          };
+
+          reader.readAsArrayBuffer(file);
+        } catch (error) {
+          showLoading(false);
+          showError(`Processing failed: ${error.message}`);
+          console.error("Excel processing error:", error);
+        }
+      }
+
+      // Fetch prediction scores
+      async function fetchPredictionScores(data) {
+        showLoading(true);
+
+        try {
+          let predictionScores;
+
+          if (USE_REAL_API) {
+            // Real API request (commented out for testing)
+            const response = await fetch(PREDICTION_API_ENDPOINT, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ data }),
+            });
+
+            if (!response.ok) {
+              throw new Error(
+                `API request failed with status ${response.status}`
+              );
+            }
+            console.log(response);
+            predictionScores = await response.json();
+            // throw new Error(
+            //   "Real API endpoint is not configured. Using mock data instead."
+            // );
+          } else {
+            // Mock data generation (for testing)
+            predictionScores = generateMockScores(data.length);
+            console.log("Using mock prediction scores for testing");
+          }
+
+          // Simulate network delay
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          // Ensure the number of returned scores matches the number of data rows
+          if (
+            typeof predictionScores === 'string' && 
+            predictionScores.startsWith("Duplicate sample IDs found:")
+          ) { 
+            throw new Error(
+              predictionScores
+            );
+          } else if(
+            !Array.isArray(predictionScores) ||
+            predictionScores.length !== data.length
+          ) {
+            throw new Error(
+              "The number of returned prediction scores does not match the number of data rows"
+            );
+          }
+
+          // Merge prediction scores into the original data and set Result based on score
+          // const updatedData = data.map((row, index) => {
+          //   const score =
+          //     predictionScores[index] !== undefined
+          //       ? predictionScores[index]
+          //       : "N/A";
+          //   const result = getResultFromScore(score);
+
+          //   return {
+          //     ...row,
+          //     "Predict Score": score,
+          //     Result: result,
+          //   };
+          // });
+          const updatedData = data.map((row, index) => {
+            const sampleIDStr = String(row.SampleID); 
+            const prediction = predictionScores.find(
+              (item) => String(item.SampleID) === sampleIDStr 
+            ) || {};
+            const score = prediction["Predict Score"] !== undefined ? prediction["Predict Score"] : "N/A";
+            const result = prediction.Result || "N/A";
+
+            return {
+              ...row,
+              "Predict Score": score,
+              Result: result,
+            };
+          });
+
+          currentTableData = updatedData;
+          // Update the table
+          displayTable(updatedData);
+
+          // Enable both buttons after successful prediction
+          updateButtonStates(true);
+
+          showNotification(
+            "Success",
+            "Prediction scores have been loaded",
+            "success"
+          );
+          showLoading(false);
+        } catch (error) {
+          showLoading(false);
+          showError(`Failed to fetch prediction scores: ${error.message}`);
+          // Show error notification
+          showNotification(
+            "Failure",
+            `Failed to fetch prediction scores: ${error.message}`,
+            "error"
+          );
+          console.error("API request error:", error);
+          if (currentTableData) {
+            displayTable(currentTableData);
+          }
+        }
+      }
+
+      // Generate mock scores for testing (0-1 range)
+      function generateMockScores(count) {
+        return Array.from({ length: count }, () => {
+          // Generate random scores between 0 and 1 for testing
+          return Math.random().toFixed(2);
+        });
+      }
+
+      // Determine Result based on Predict Score
+      function getResultFromScore(score) {
+        if (typeof score === "string") {
+          score = parseFloat(score);
+        }
+
+        if (isNaN(score)) {
+          return "N/A";
+        }
+
+        // Convert score to percentage for comparison
+        // const percentage = score * 100;
+
+        if (score >= 0.46) {
+          return "High Risk";
+        } else {
+          return "Low Risk";
+        }
+      }
+
+      // Update button states based on data availability
+      function updateButtonStates(hasResults) {
+        fetchApiBtn.disabled = false;
+        fetchApiBtn.classList.remove("opacity-50", "cursor-not-allowed");
+
+        if (hasResults) {
+          downloadExcelBtn.disabled = false;
+          downloadExcelBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        } else {
+          downloadExcelBtn.disabled = true;
+          downloadExcelBtn.classList.add("opacity-50", "cursor-not-allowed");
+        }
+      }
+
+      // Display table
+      // Display table
+      function displayTable(data) {
+        if (!data || !data.length) {
+          showError("No data to display");
+          return;
+        }
+
+        resetResultDisplay();
+        resultContainer.classList.remove("hidden");
+
+        // Generate table headers
+        const headers = Object.keys(data[0]);
+        tableHeader.innerHTML = "";
+
+        headers.forEach((header) => {
+          const th = document.createElement("th");
+          th.setAttribute("scope", "col");
+          th.className =
+            "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+          th.textContent = header;
+          tableHeader.appendChild(th);
+        });
+
+        // Generate table content
+        tableBody.innerHTML = "";
+                
+        data.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 transition-colors duration-150";
+
+          headers.forEach((header) => {
+            const td = document.createElement("td");
+            td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-500";
+
+            const value = row[header];
+            if (typeof value === 'number' && header !== 'SampleID') {
+              // Format number to two decimal places
+              td.textContent = value.toFixed(2);
+            } else if (value === "Undetermined") {
+              // Replace Undetermined with abbreviated form
+              td.textContent = "Undet"; 
+            } else if (header === "Result") {
+              const result = row[header];
+              let textColor = "text-gray-800";
+
+              if (result === "High risk") {
+                textColor = "text-red-600 font-bold";
+              }
+
+              td.innerHTML = `<span class="${textColor}">${
+                result || "N/A"
+              }</span>`;
+            } else {
+              td.textContent = value || "";
+            }
+
+            tr.appendChild(td);
+          });
+
+          tableBody.appendChild(tr);
+        });
+      } 
+
+      // Show error
+      function showError(message) {
+        resetResultDisplay();
+        errorContainer.classList.remove("hidden");
+        errorMessage.textContent = message;
+      }
+
+      // Show loading state
+      function showLoading(show) {
+        if (show) {
+          resetResultDisplay();
+          loadingIndicator.classList.remove("hidden");
+        } else {
+          loadingIndicator.classList.add("hidden");
+        }
+      }
+
+      // Reset result display
+      function resetResultDisplay() {
+        resultContainer.classList.add("hidden");
+        errorContainer.classList.add("hidden");
+        emptyState.classList.add("hidden");
+        tableHeader.innerHTML = "";
+        tableBody.innerHTML = "";
+      }
+
+      // Show notification
+      function showNotification(title, message, type = "success") {
+        // Hide any existing notification first
+        notification.style.transform = "translateX(calc(100% + 2rem))";
+
+        notificationMessage.textContent = title;
+        notificationDetail.textContent = message;
+
+        // Set icon and color
+        if (type === "success") {
+          notificationIcon.innerHTML =
+            '<i class="fa-solid fa-check-circle text-green-500"></i>';
+        } else if (type === "error") {
+          notificationIcon.innerHTML =
+            '<i class="fa-solid fa-exclamation-circle text-red-500"></i>';
+        } else if (type === "warning") {
+          notificationIcon.innerHTML =
+            '<i class="fa-solid fa-exclamation-triangle text-yellow-500"></i>';
+        } else if (type === "info") {
+          notificationIcon.innerHTML =
+            '<i class="fa-solid fa-info-circle text-blue-500"></i>';
+        }
+
+        // Show notification with animation after a small delay
+        setTimeout(() => {
+          notification.style.transform = "translateX(0)";
+        }, 50);
+
+        // Automatically close
+        setTimeout(() => {
+          notification.style.transform = "translateX(calc(100% + 2rem))";
+        }, 3000);
+      }
+
+      // Format file size
+      function formatFileSize(bytes) {
+        if (bytes === 0) return "0 Bytes";
+
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+      }
+
+      // Initialization
+      document.addEventListener("DOMContentLoaded", function () {
+        // Disable both buttons initially
+        fetchApiBtn.disabled = true;
+        fetchApiBtn.classList.add("opacity-50", "cursor-not-allowed");
+        downloadExcelBtn.disabled = true;
+        downloadExcelBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+        // Show initial info message
+        resultInfo.classList.remove("hidden");
+      });
+    </script>
+  </body>
+</html>
