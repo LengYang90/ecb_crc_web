@@ -134,29 +134,34 @@ class MLGeniePredictor:
         :param incomplete_list: List of incomplete samples
         :return: DataFrame
         """
-        labels = self.get_label_df(vaild_df)
-        data = MLGenie_Data.MultiOmicsData(gene_expression=[vaild_df], labels=labels["label"])
-        test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
-        test_pred["sample_id"] = vaild_df.index
-        test_pred = test_pred[["sample_id", "prediction"]]
-        test_pred["result"] = test_pred["prediction"].apply(lambda x: "High risk" if x >= self.threshold else "Low risk")
-        test_pred.columns = ["SampleID", "Predict Score", "Result"]
+        if not vaild_df.empty:
+            labels = self.get_label_df(vaild_df)
+            data = MLGenie_Data.MultiOmicsData(gene_expression=[vaild_df], labels=labels["label"])
+            test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
+            test_pred["sample_id"] = vaild_df.index
+            test_pred = test_pred[["sample_id", "prediction"]]
+            test_pred["result"] = test_pred["prediction"].apply(lambda x: "High risk" if x >= self.threshold else "Low risk")
+            test_pred.columns = ["SampleID", "Predict Score", "Result"]
+        else:
+            test_pred = pd.DataFrame(columns=["SampleID", "Predict Score", "Result"])
         
         # Deal with invalid samples
-        for sample_id in invalid_list:
-            invalid_row = pd.DataFrame({
-                "SampleID": [sample_id],
-                "Predict Score": [""],
-                "Result": ["INVALID DATA"]
-            })
-            test_pred = pd.concat([test_pred, invalid_row], ignore_index=True)
+        if invalid_list:
+            for sample_id in invalid_list:
+                invalid_row = pd.DataFrame({
+                    "SampleID": [sample_id],
+                    "Predict Score": [""],
+                    "Result": ["INVALID DATA"]
+                })
+                test_pred = pd.concat([test_pred, invalid_row], ignore_index=True)
         # Deal with incomplete samples
-        for sample_id in incomplete_list:
-            incomplete_row = pd.DataFrame({
-                "SampleID": [sample_id],
-                "Predict Score": [""],
-                "Result": ["INCOMPLETE DATA"]
-            })
+        if incomplete_list:
+            for sample_id in incomplete_list:
+                incomplete_row = pd.DataFrame({
+                    "SampleID": [sample_id],
+                    "Predict Score": [""],
+                    "Result": ["INCOMPLETE DATA"]
+                })
             test_pred = pd.concat([test_pred, incomplete_row], ignore_index=True)
         result_json_str = test_pred.to_json(orient="records", force_ascii=False)
         result = json.loads(result_json_str)
