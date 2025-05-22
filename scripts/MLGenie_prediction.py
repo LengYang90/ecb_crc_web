@@ -137,12 +137,24 @@ class MLGeniePredictor:
         :return: DataFrame
         """
         if not valid_df.empty:
-            labels = self.get_label_df(valid_df)
-            data = MLGenie_Data.MultiOmicsData(gene_expression=[valid_df.astype(float)], labels=labels["label"])
-            test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
-
-            test_pred["sample_id"] = valid_df.index
-            test_pred = test_pred[["sample_id", "prediction"]]
+            if len(valid_df) == 1:
+                # copy the only sample and change the sample_id
+                dummy_sample = valid_df.copy()
+                dummy_sample.index = [str(valid_df.index[0]) + "_dummy"]
+                valid_df_aug = pd.concat([valid_df, dummy_sample])
+                labels = self.get_label_df(valid_df_aug)
+                data = MLGenie_Data.MultiOmicsData(gene_expression=[valid_df_aug.astype(float)], labels=labels["label"])
+                test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
+                test_pred["sample_id"] = valid_df_aug.index
+                # remove the dummy sample
+                test_pred = test_pred[~test_pred["sample_id"].str.endswith("_dummy")]
+                test_pred = test_pred[["sample_id", "prediction"]]
+            else:
+                labels = self.get_label_df(valid_df)
+                data = MLGenie_Data.MultiOmicsData(gene_expression=[valid_df.astype(float)], labels=labels["label"])
+                test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
+                test_pred["sample_id"] = valid_df.index
+                test_pred = test_pred[["sample_id", "prediction"]]
             test_pred["result"] = test_pred["prediction"].apply(lambda x: "High risk" if x >= self.threshold else "Low risk")
             test_pred.columns = ["SampleID", "Predict Score", "Result"]
         else:
