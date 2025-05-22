@@ -101,17 +101,17 @@ class MLGeniePredictor:
         invalid_list = list(invalid_df.index)
         return valid_df, invalid_list, incomplete_list
 
-    def transform_data(self, vaild_df:pd.DataFrame):
+    def transform_data(self, valid_df:pd.DataFrame):
         """
         Transform the input data,replace 'Undetermined' with 40
-        :param vaild_df: Input DataFrame, index is sample_id
+        :param valid_df: Input DataFrame, index is sample_id
         :return: DataFrame
         """
-        if vaild_df.empty:
-            return vaild_df
-        cols_to_replace = [col for col in vaild_df.columns if col != 'SampleID']
-        vaild_df[cols_to_replace] = vaild_df[cols_to_replace].replace('Undetermined', 40)
-        return vaild_df
+        if valid_df.empty:
+            return valid_df
+        cols_to_replace = [col for col in valid_df.columns if col != 'SampleID']
+        valid_df[cols_to_replace] = valid_df[cols_to_replace].replace('Undetermined', 40)
+        return valid_df
 
     def get_label_df(self, test_df: pd.DataFrame, seed: int = 42):
         """
@@ -128,19 +128,20 @@ class MLGeniePredictor:
         label_df.index.name = "sample_id"
         return label_df
 
-    def predict_proba(self,vaild_df:pd.DataFrame,invalid_list:list,incomplete_list:list):
+    def predict_proba(self,valid_df:pd.DataFrame,invalid_list:list,incomplete_list:list):
         """
         Predict the probability of the input DataFrame
-        :param vaild_df: Input DataFrame, index is sample_id
+        :param valid_df: Input DataFrame, index is sample_id
         :param invalid_list: List of invalid samples
         :param incomplete_list: List of incomplete samples
         :return: DataFrame
         """
-        if not vaild_df.empty:
-            labels = self.get_label_df(vaild_df)
-            data = MLGenie_Data.MultiOmicsData(gene_expression=[vaild_df], labels=labels["label"])
+        if not valid_df.empty:
+            labels = self.get_label_df(valid_df)
+            data = MLGenie_Data.MultiOmicsData(gene_expression=[valid_df.astype(float)], labels=labels["label"])
             test_pred, test_performance, test_ROC_data, test_PR_data = self.analyzer.transform(data)
-            test_pred["sample_id"] = vaild_df.index
+
+            test_pred["sample_id"] = valid_df.index
             test_pred = test_pred[["sample_id", "prediction"]]
             test_pred["result"] = test_pred["prediction"].apply(lambda x: "High risk" if x >= self.threshold else "Low risk")
             test_pred.columns = ["SampleID", "Predict Score", "Result"]
