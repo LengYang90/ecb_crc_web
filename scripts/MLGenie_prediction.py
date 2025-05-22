@@ -107,6 +107,8 @@ class MLGeniePredictor:
         :param vaild_df: Input DataFrame, index is sample_id
         :return: DataFrame
         """
+        if vaild_df.empty:
+            return vaild_df
         cols_to_replace = [col for col in vaild_df.columns if col != 'SampleID']
         vaild_df[cols_to_replace] = vaild_df[cols_to_replace].replace('Undetermined', 40)
         return vaild_df
@@ -162,7 +164,7 @@ class MLGeniePredictor:
                     "Predict Score": [""],
                     "Result": ["INCOMPLETE DATA"]
                 })
-            test_pred = pd.concat([test_pred, incomplete_row], ignore_index=True)
+                test_pred = pd.concat([test_pred, incomplete_row], ignore_index=True)
         result_json_str = test_pred.to_json(orient="records", force_ascii=False)
         result = json.loads(result_json_str)
         return result
@@ -180,6 +182,7 @@ class MLGeniePredictor:
             print(f"Incomplete samples: {incomplete_list_str}")
         transform_valid_df = self.transform_data(valid_df)
         return self.predict_proba(transform_valid_df,invalid_list,incomplete_list)
+        
     
     
 

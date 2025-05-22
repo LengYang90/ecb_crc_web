@@ -11,8 +11,6 @@ router = APIRouter()
 @router.post("/predict")
 def crc_v1_0_predict(req: CRCV10Req):
     try:
-        print("req.data: ", req.data)
-        #print(req.data)
         predictor = MLGeniePredictor(req.data)
         pred_result = predictor.run()
         return pred_result
