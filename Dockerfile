@@ -1,13 +1,13 @@
-FROM python:3.9-slim
+FROM python:3.10.0
 
 
 WORKDIR /opt/ecb_crc_web
-COPY . .
+COPY . /opt/ecb_crc_web
 
 # Install Chromium dependencies
-RUN apt-get update && apt-get upgrade -y
+#RUN apt-get update
 
 RUN pip install -r requirements.txt
 
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8211"]
+#CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8211"]
